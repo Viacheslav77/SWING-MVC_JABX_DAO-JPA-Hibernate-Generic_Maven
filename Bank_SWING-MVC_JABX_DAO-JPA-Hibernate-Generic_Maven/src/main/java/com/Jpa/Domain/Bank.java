@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 
 import com.GUI.EditDialog;
 import com.GUI.ViewTable;
@@ -229,12 +230,40 @@ public class Bank {
 		return customer;
         
     }
-    public void updateCustomer(Customer customer){	
+    public void updateCustomer(int index){	
+	    // получаем данные клиента по его ID
+    	Customer customer = new Customer();
+    	ViewTable viewTable=null;
     	try{	
             bankService.getPersistOfDatabase ();	    
+            customer = (Customer) bankService.getGenericDao(customer).getObjectByPK(index); 
+
+				try {
+					viewTable = new ViewTable (customer.getName(),
+										 		customer.getFirstName(),
+										 		customer.getPhone(),
+										 		customer.getPosition());
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			
+			// Создаем диалог для ввода данных      
+	    	String [] fieldTitle ={"Фамилия","Имя","Телефон","Должность"};	
+	    	EditDialog newCustomerEditDialog = new EditDialog(viewTable,fieldTitle);
+	    	
+	    	customer.setName(newCustomerEditDialog.getValueEntryField(0));
+	    	customer.setFirstName(newCustomerEditDialog.getValueEntryField(1));
+	    	customer.setPhone(newCustomerEditDialog.getValueEntryField(2));
+	    	customer.setPosition(newCustomerEditDialog.getValueEntryField(3));
+	    	
+	    	if(newCustomerEditDialog.isSave()){	    		
+    
             bankService.getGenericDao(customer).persistGroup(customer);	
-        	} finally {
+        	} 
+	    	
+    	}finally {
     			bankService.closePersistOfDatabase ();        
-    		}
+    	}
     }
 }

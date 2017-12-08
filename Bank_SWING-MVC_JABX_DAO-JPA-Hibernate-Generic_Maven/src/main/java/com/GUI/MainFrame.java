@@ -216,31 +216,9 @@ public class MainFrame extends JFrame implements ActionListener {
     private void editCustomer() {     
         ViewTable viewTable = null;
         // если строка выделена - можно ее редактировать
-        if (contactTable.getSelectedRow() != -1) {        	    
-	        	// получаем данные клиента по его ID
-        	Customer customer = bank.getCustomerId(contactTable.getSelectedRow());
-				try {
-					viewTable = new ViewTable (customer.getName(),
-										 customer.getFirstName(),
-										 customer.getPhone(),
-										 customer.getPosition());
-				} catch (Exception e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			
-			// Создаем диалог для ввода данных      
-	    	String [] fieldTitle ={"Фамилия","Имя","Телефон","Должность"};	
-	    	EditDialog newCustomerEditDialog = new EditDialog(viewTable,fieldTitle);
-	    	
-	    	customer.setName(newCustomerEditDialog.getValueEntryField(0));
-	    	customer.setFirstName(newCustomerEditDialog.getValueEntryField(1));
-	    	customer.setPhone(newCustomerEditDialog.getValueEntryField(2));
-	    	customer.setPosition(newCustomerEditDialog.getValueEntryField(3));
-	    	
-	    	if(newCustomerEditDialog.isSave()){	    		
-					bank.updateCustomer(customer);
-	    		}
+        if (contactTable.getSelectedRow() != -1){   	
+        	
+        	bank.updateCustomer(contactTable.getSelectedRow());	
         	loadCustomers();
 
         } else {

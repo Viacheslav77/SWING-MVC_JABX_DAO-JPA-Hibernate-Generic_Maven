@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -19,8 +20,12 @@ import com.Jpa.Domain.ExchangeRate;
 
 public class FinanceUkranian {
     
-    public static List<Object>   getInformation() {
-        String request = "http://resources.finance.ua/ru/public/currency-cash.xml";
+    public static List<Object> getInformation() {
+    	List <Object> objectList = new ArrayList <Object> ();
+    	Date d = new Date(System.currentTimeMillis());
+        SimpleDateFormat format = new SimpleDateFormat("   hh:mm    dd.MM.yy ");     
+        String updateDate = format.format(d); //source.getDate();
+    	String request = "http://resources.finance.ua/ru/public/currency-cash.xml";
         String path = "D:\\1\\finance.xml";     
         try {
 			BuildSource.performRequest(request, path);
@@ -28,48 +33,19 @@ public class FinanceUkranian {
 			
 			e.printStackTrace();
 		}
-        Source source = BuildSource.getParseRequestJABX(path);
-        List <Object> objectList = new ArrayList <Object> ();
-       
-        Date d = new Date(System.currentTimeMillis());
-        SimpleDateFormat format = new SimpleDateFormat("   hh:mm    dd.MM.yy ");     
-        String updateDate = format.format(d); //source.getDate();
+        Source source = BuildSource.getParseRequestJABX(path);  
+    	
+        objectList.addAll(getbanksFromFinanceUa (updateDate, source));
         
-        for (Organization organization: source.getOrganizations().getOrganization()){     	    	
-        	BankOrganization bankOrganization = 
-		    			new BankOrganization(organization.getTitle().getValue(), 
-									         organization.getPhone().getValue(), 
-									         organization.getAddress().getValue());
-        	objectList.add(bankOrganization);
-     
-        	for (CurrencyFinance currencyFinance: organization.getCurrencies().getCurrency()){
-        		objectList.add(	
-        			new BankCurrency (updateDate, bankOrganization, currencyFinance.getId(), currencyFinance.getAr(), currencyFinance.getBr()));
-        	 	}
-        	}                
-        Currency uah = new Currency("UAH", "Ukrainian");
+    	Currency uah = new Currency("UAH", "Ukrainian");
         Currency usd = new Currency("USD", "USA");
         Currency eur = new Currency("EUR", "Euro");				 
         objectList.add(uah);
         objectList.add(usd);
         objectList.add(eur);
         
-        Organization bankOrganization = source.getOrganizations().getOrganization().get(0);
-        String byBank = bankOrganization.getTitle().getValue();
+        objectList.addAll(getCurrencyFromFinanceUa (updateDate, source,uah,usd,eur));          
         
-        
-        CurrencyFinance rateUsd = bankOrganization.getCurrencies().getCurrency().get(1);
-        CurrencyFinance rateEur = bankOrganization.getCurrencies().getCurrency().get(0);
-       
-        objectList.add(new ExchangeRate(uah, usd, rateUsd.getBr(),byBank,updateDate));
-        objectList.add(new ExchangeRate(usd, uah, rateUsd.getAr(),byBank,updateDate));
-        objectList.add(new ExchangeRate(uah, eur, rateEur.getBr(),byBank,updateDate));
-        objectList.add(new ExchangeRate(eur, uah, rateEur.getAr(),byBank,updateDate));
-        objectList.add(new ExchangeRate(eur, usd,rateUsd.getBr().divide(rateEur.getBr(), BigDecimal.ROUND_HALF_EVEN),byBank,updateDate));
-        objectList.add(new ExchangeRate(usd, eur,rateEur.getAr().divide(rateUsd.getAr(), BigDecimal.ROUND_HALF_EVEN),byBank,updateDate));
-         
-        
- 
         List <Customer> listCustomer = new ArrayList<Customer>();
         for (int i=0; i < getCustomers().length;){
         	Customer customer = new Customer(getCustomers()[i++], 
@@ -90,7 +66,42 @@ public class FinanceUkranian {
         
 		return objectList;
     }
-    public static String[] getCustomers(){
+    private static Collection<? extends Object> getCurrencyFromFinanceUa(String updateDate, Source source, Currency uah, Currency usd, Currency eur) {
+    	List <Object> objectList = new ArrayList <Object> ();
+   
+        Organization bankOrganization = source.getOrganizations().getOrganization().get(0);
+        String byBank = bankOrganization.getTitle().getValue();      
+        
+        CurrencyFinance rateUsd = bankOrganization.getCurrencies().getCurrency().get(1);
+        CurrencyFinance rateEur = bankOrganization.getCurrencies().getCurrency().get(0);
+       
+        objectList.add(new ExchangeRate(uah, usd, rateUsd.getBr(),byBank,updateDate));
+        objectList.add(new ExchangeRate(usd, uah, rateUsd.getAr(),byBank,updateDate));
+        objectList.add(new ExchangeRate(uah, eur, rateEur.getBr(),byBank,updateDate));
+        objectList.add(new ExchangeRate(eur, uah, rateEur.getAr(),byBank,updateDate));
+        objectList.add(new ExchangeRate(eur, usd,rateUsd.getBr().divide(rateEur.getBr(), BigDecimal.ROUND_HALF_EVEN),byBank,updateDate));
+        objectList.add(new ExchangeRate(usd, eur,rateEur.getAr().divide(rateUsd.getAr(), BigDecimal.ROUND_HALF_EVEN),byBank,updateDate));
+		
+        return objectList;
+	}
+	private static Collection<? extends Object> getbanksFromFinanceUa(String updateDate, Source source) {
+    	List <Object> objectList = new ArrayList <Object> ();
+    	
+        for (Organization organization: source.getOrganizations().getOrganization()){     	    	
+        	BankOrganization bankOrganization = 
+		    			new BankOrganization(organization.getTitle().getValue(), 
+									         organization.getPhone().getValue(), 
+									         organization.getAddress().getValue());
+        	objectList.add(bankOrganization);
+     
+        	for (CurrencyFinance currencyFinance: organization.getCurrencies().getCurrency()){
+        		objectList.add(	
+        			new BankCurrency (updateDate, bankOrganization, currencyFinance.getId(), currencyFinance.getAr(), currencyFinance.getBr()));
+        	 	}
+        	} 
+		return objectList;
+	}
+	public static String[] getCustomers(){
     	String [] customersDate = 
     		{"Ковалэнко","Семен" , "+38044-537-90-63","Начальник отдела", 
     		  "Бондарэнко ","Оксана","+38044-526-72-75", "Заместитель начальника отдела" ,
